@@ -1,13 +1,14 @@
 {
-  "name": "Hapus Background",
-  "short_name": "Hapus BG",
+  "name": "remove-bg",
+  "short_name": "remove-bg",
   "description": "Hapus background foto gratis, jalan di HP.",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "background_color": "#eef1f4",
-  "theme_color": "#14202B",
+  "background_color": "#f6f6f4",
+  "theme_color": "#000000",
   "icons": [
     { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
   ]
 }
+
