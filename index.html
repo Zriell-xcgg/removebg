@@ -3,58 +3,87 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Hapus Background</title>
-<meta name="theme-color" content="#14202B">
+<title>remove-bg</title>
+<meta name="theme-color" content="#000000">
 <link rel="manifest" href="manifest.json">
 <link rel="icon" href="icon.svg" type="image/svg+xml">
 <style>
-:root{--bg:#eef1f4;--ink:#14202b;--mute:#5b6b7a;--accent:#2f6bff;--line:#cfd6dd}
-@media (prefers-color-scheme:dark){:root{--bg:#10171e;--ink:#eef1f4;--mute:#93a3b3;--line:#2a3743}}
+:root{--paper:#f6f6f4;--ink:#000;--mute:#555;--line:#d6d6d2;--mono:ui-monospace,"SF Mono",Menlo,Consolas,monospace}
 *{box-sizing:border-box}
 html,body{margin:0}
-body{background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.5;padding:env(safe-area-inset-top) 16px calc(24px + env(safe-area-inset-bottom))}
-main{max-width:520px;margin:0 auto;padding-top:28px}
-h1{font-size:2rem;line-height:1.1;margin:0 0 8px;letter-spacing:-.02em}
-.sub{margin:0 0 20px;color:var(--mute)}
-.pick{display:block;text-align:center;background:var(--accent);color:#fff;font-weight:600;font-size:1.05rem;padding:16px;border-radius:12px;cursor:pointer}
+body{background:var(--paper);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.45;padding:env(safe-area-inset-top) 20px calc(28px + env(safe-area-inset-bottom))}
+main{max-width:560px;margin:0 auto;padding-top:24px}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px}
+.brand{font-weight:800;font-size:1.25rem;letter-spacing:-.02em}
+.tag{display:flex;border:2px solid var(--ink);border-radius:4px;font:.78rem var(--mono);overflow:hidden}
+.tag span{padding:5px 9px}
+.tag span:last-child{background:var(--ink);color:#fff}
+.chip{display:inline-flex;margin:36px 0 14px;border:2px solid var(--ink);border-radius:4px;font:.82rem var(--mono);overflow:hidden}
+.chip b{background:var(--ink);color:#fff;padding:6px 10px;font-weight:400}
+.chip span{padding:6px 12px}
+h1{font-size:clamp(2.4rem,11vw,3.4rem);line-height:1;font-weight:800;letter-spacing:-.045em;margin:0 0 14px}
+.lead{font-size:1.1rem;font-weight:600;color:#222;margin:0 0 28px;max-width:30ch}
+.pick{display:block;text-align:center;background:var(--ink);color:#fff;font-weight:700;font-size:1.05rem;padding:17px;border-radius:6px;cursor:pointer}
 .pick:focus-within{outline:3px solid var(--ink);outline-offset:3px}
-#status{min-height:1.5em;margin:14px 0;color:var(--mute);font-size:.95rem}
-#status.err{color:#d6342c}
-.stage{border:1px solid var(--line);border-radius:12px;overflow:hidden;line-height:0;
-background-color:#fff;background-image:linear-gradient(45deg,#d9dee4 25%,transparent 25%,transparent 75%,#d9dee4 75%),linear-gradient(45deg,#d9dee4 25%,transparent 25%,transparent 75%,#d9dee4 75%);background-size:20px 20px;background-position:0 0,10px 10px}
+#status{min-height:1.5em;margin:14px 0 4px;font:.85rem var(--mono);color:var(--mute)}
+#status.err{color:#000;font-weight:700}
+#result{display:none}
+#result.on{display:block}
+.stage{border:2px solid var(--ink);border-radius:6px;overflow:hidden;line-height:0;margin-top:6px;
+background-color:#fff;background-image:linear-gradient(45deg,#ddd 25%,transparent 25%,transparent 75%,#ddd 75%),linear-gradient(45deg,#ddd 25%,transparent 25%,transparent 75%,#ddd 75%);background-size:20px 20px;background-position:0 0,10px 10px}
 .stage canvas{width:100%;height:auto;display:block}
-.tools{margin-top:16px}
-.tools p{margin:0 0 8px;font-weight:600}
+.lbl{font:.78rem var(--mono);color:var(--mute);margin:18px 0 8px}
 .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
-.sw{width:44px;height:44px;border-radius:50%;border:2px solid var(--line);padding:0;cursor:pointer;background:var(--bg)}
-.sw[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
-.sw.none{background-image:linear-gradient(45deg,#c5ccd3 25%,transparent 25%,transparent 75%,#c5ccd3 75%),linear-gradient(45deg,#c5ccd3 25%,transparent 25%,transparent 75%,#c5ccd3 75%);background-size:12px 12px;background-position:0 0,6px 6px;background-color:#fff}
-input[type=color]{width:44px;height:44px;border:2px solid var(--line);border-radius:50%;padding:0;background:none;cursor:pointer}
-#save{margin-top:16px;width:100%;font:inherit;font-weight:600;padding:14px;border-radius:12px;border:2px solid var(--ink);background:transparent;color:var(--ink);cursor:pointer}
-#save:focus-visible,.sw:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
-[hidden]{display:none!important}
+.sw{width:46px;height:46px;border-radius:4px;border:2px solid var(--line);padding:0;cursor:pointer}
+.sw[aria-pressed="true"]{border:3px solid var(--ink)}
+.sw.none{background-color:#fff;background-image:linear-gradient(45deg,#bbb 25%,transparent 25%,transparent 75%,#bbb 75%),linear-gradient(45deg,#bbb 25%,transparent 25%,transparent 75%,#bbb 75%);background-size:12px 12px;background-position:0 0,6px 6px}
+input[type=color]{width:46px;height:46px;border:2px solid var(--line);border-radius:4px;padding:0;background:none;cursor:pointer}
+#save{margin-top:18px;width:100%;font:inherit;font-weight:700;padding:15px;border-radius:6px;border:2px solid var(--ink);background:transparent;color:var(--ink);cursor:pointer}
+#save:active{background:var(--ink);color:#fff}
+#save:focus-visible,.sw:focus-visible{outline:3px solid var(--ink);outline-offset:3px}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:40px;padding-top:18px;border-top:1px solid var(--line)}
+.stats small{display:block;font:.72rem var(--mono);color:var(--mute)}
+.stats strong{font-size:.98rem;font-weight:700}
+.note{display:flex;gap:18px;margin-top:20px;font-size:.98rem}
+.note small{font:.72rem var(--mono);color:var(--mute);padding-top:4px}
+.note strong{font-weight:700}
+.foot{margin-top:36px;font:.75rem var(--mono);color:var(--mute)}
 </style>
 </head>
 <body>
 <main>
-  <h1>Hapus Background</h1>
-  <p class="sub">Gratis dan jalan di HP kamu. Foto tidak diupload ke mana pun.</p>
+  <div class="top">
+    <div class="brand">remove-bg</div>
+    <div class="tag"><span>FOTO</span><span>GRATIS</span></div>
+  </div>
+
+  <div class="chip"><b>01</b><span>PILIH FOTO</span></div>
+  <h1>Hapus background foto.</h1>
+  <p class="lead">Jalan di HP kamu. Foto tidak diupload ke mana pun.</p>
 
   <label class="pick">Pilih foto<input type="file" id="file" accept="image/*" hidden></label>
   <div id="status" role="status" aria-live="polite"></div>
 
-  <div class="stage" id="stage" hidden><canvas id="out"></canvas></div>
-
-  <div class="tools" id="tools" hidden>
-    <p>Warna background</p>
-    <div class="row" id="swatches">
+  <section id="result">
+    <div class="chip"><b>02</b><span>HASIL</span></div>
+    <div class="stage"><canvas id="out"></canvas></div>
+    <p class="lbl">WARNA BACKGROUND</p>
+    <div class="row">
       <button class="sw none" data-bg="" aria-pressed="true" aria-label="Transparan"></button>
       <button class="sw" data-bg="#ffffff" style="background:#fff" aria-pressed="false" aria-label="Putih"></button>
       <button class="sw" data-bg="#000000" style="background:#000" aria-pressed="false" aria-label="Hitam"></button>
-      <input type="color" id="custom" value="#2f6bff" aria-label="Pilih warna sendiri">
+      <input type="color" id="custom" value="#888888" aria-label="Pilih warna sendiri">
     </div>
     <button id="save">Simpan PNG</button>
+  </section>
+
+  <div class="stats">
+    <div><small>PROSES</small><strong>DI HP</strong></div>
+    <div><small>HARGA</small><strong>GRATIS</strong></div>
+    <div><small>UPLOAD</small><strong>TIDAK ADA</strong></div>
   </div>
+  <div class="note"><small>KET</small><strong>Azril genteng bgt</strong></div>
+  <div class="foot">remove-bg</div>
 </main>
 
 <script type="module">
@@ -96,7 +125,7 @@ function draw() {
 $("file").addEventListener("change", async e => {
   const f = e.target.files[0];
   if (!f) return;
-  $("stage").hidden = true; $("tools").hidden = true;
+  $("result").classList.remove("on");
   try {
     await loadModel();
     status("Menghapus background...");
@@ -119,7 +148,7 @@ $("file").addEventListener("change", async e => {
     ctx.putImageData(d, 0, 0);
 
     cutout = c; draw();
-    $("stage").hidden = false; $("tools").hidden = false;
+    $("result").classList.add("on");
     status("Selesai. Pilih warna background atau langsung simpan.");
   } catch (err) {
     console.error(err);
@@ -139,7 +168,7 @@ $("save").addEventListener("click", () => {
   $("out").toBlob(blob => {
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = "tanpa-background.png";
+    a.download = "remove-bg.png";
     a.click();
   }, "image/png");
 });
