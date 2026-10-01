@@ -1,0 +1,150 @@
+<!doctype html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Hapus Background</title>
+<meta name="theme-color" content="#14202B">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon.svg" type="image/svg+xml">
+<style>
+:root{--bg:#eef1f4;--ink:#14202b;--mute:#5b6b7a;--accent:#2f6bff;--line:#cfd6dd}
+@media (prefers-color-scheme:dark){:root{--bg:#10171e;--ink:#eef1f4;--mute:#93a3b3;--line:#2a3743}}
+*{box-sizing:border-box}
+html,body{margin:0}
+body{background:var(--bg);color:var(--ink);font-family:system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;line-height:1.5;padding:env(safe-area-inset-top) 16px calc(24px + env(safe-area-inset-bottom))}
+main{max-width:520px;margin:0 auto;padding-top:28px}
+h1{font-size:2rem;line-height:1.1;margin:0 0 8px;letter-spacing:-.02em}
+.sub{margin:0 0 20px;color:var(--mute)}
+.pick{display:block;text-align:center;background:var(--accent);color:#fff;font-weight:600;font-size:1.05rem;padding:16px;border-radius:12px;cursor:pointer}
+.pick:focus-within{outline:3px solid var(--ink);outline-offset:3px}
+#status{min-height:1.5em;margin:14px 0;color:var(--mute);font-size:.95rem}
+#status.err{color:#d6342c}
+.stage{border:1px solid var(--line);border-radius:12px;overflow:hidden;line-height:0;
+background-color:#fff;background-image:linear-gradient(45deg,#d9dee4 25%,transparent 25%,transparent 75%,#d9dee4 75%),linear-gradient(45deg,#d9dee4 25%,transparent 25%,transparent 75%,#d9dee4 75%);background-size:20px 20px;background-position:0 0,10px 10px}
+.stage canvas{width:100%;height:auto;display:block}
+.tools{margin-top:16px}
+.tools p{margin:0 0 8px;font-weight:600}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.sw{width:44px;height:44px;border-radius:50%;border:2px solid var(--line);padding:0;cursor:pointer;background:var(--bg)}
+.sw[aria-pressed="true"]{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+.sw.none{background-image:linear-gradient(45deg,#c5ccd3 25%,transparent 25%,transparent 75%,#c5ccd3 75%),linear-gradient(45deg,#c5ccd3 25%,transparent 25%,transparent 75%,#c5ccd3 75%);background-size:12px 12px;background-position:0 0,6px 6px;background-color:#fff}
+input[type=color]{width:44px;height:44px;border:2px solid var(--line);border-radius:50%;padding:0;background:none;cursor:pointer}
+#save{margin-top:16px;width:100%;font:inherit;font-weight:600;padding:14px;border-radius:12px;border:2px solid var(--ink);background:transparent;color:var(--ink);cursor:pointer}
+#save:focus-visible,.sw:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main>
+  <h1>Hapus Background</h1>
+  <p class="sub">Gratis dan jalan di HP kamu. Foto tidak diupload ke mana pun.</p>
+
+  <label class="pick">Pilih foto<input type="file" id="file" accept="image/*" hidden></label>
+  <div id="status" role="status" aria-live="polite"></div>
+
+  <div class="stage" id="stage" hidden><canvas id="out"></canvas></div>
+
+  <div class="tools" id="tools" hidden>
+    <p>Warna background</p>
+    <div class="row" id="swatches">
+      <button class="sw none" data-bg="" aria-pressed="true" aria-label="Transparan"></button>
+      <button class="sw" data-bg="#ffffff" style="background:#fff" aria-pressed="false" aria-label="Putih"></button>
+      <button class="sw" data-bg="#000000" style="background:#000" aria-pressed="false" aria-label="Hitam"></button>
+      <input type="color" id="custom" value="#2f6bff" aria-label="Pilih warna sendiri">
+    </div>
+    <button id="save">Simpan PNG</button>
+  </div>
+</main>
+
+<script type="module">
+import { AutoModel, AutoProcessor, RawImage, env } from "https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.0.2";
+env.allowLocalModels = false;
+
+const $ = id => document.getElementById(id);
+const status = (t, err = false) => { $("status").textContent = t; $("status").className = err ? "err" : ""; };
+let model, processor, cutout, bg = "";
+
+async function loadModel() {
+  if (model) return;
+  status("Mengunduh model AI (sekali saja, sekitar 45 MB)...");
+  const onProgress = p => {
+    if (p.status === "progress") status("Mengunduh model AI... " + Math.round(p.progress) + "%");
+  };
+  model = await AutoModel.from_pretrained("briaai/RMBG-1.4", {
+    config: { model_type: "custom" },
+    progress_callback: onProgress
+  });
+  processor = await AutoProcessor.from_pretrained("briaai/RMBG-1.4", {
+    config: {
+      do_normalize: true, do_pad: false, do_rescale: true, do_resize: true,
+      image_mean: [0.5, 0.5, 0.5], image_std: [1, 1, 1],
+      feature_extractor_type: "ImageFeatureExtractor",
+      resample: 2, rescale_factor: 0.00392156862745098,
+      size: { width: 1024, height: 1024 }
+    }
+  });
+}
+
+function draw() {
+  const out = $("out"), ctx = out.getContext("2d");
+  out.width = cutout.width; out.height = cutout.height;
+  if (bg) { ctx.fillStyle = bg; ctx.fillRect(0, 0, out.width, out.height); }
+  ctx.drawImage(cutout, 0, 0);
+}
+
+$("file").addEventListener("change", async e => {
+  const f = e.target.files[0];
+  if (!f) return;
+  $("stage").hidden = true; $("tools").hidden = true;
+  try {
+    await loadModel();
+    status("Menghapus background...");
+    let image = await RawImage.fromURL(URL.createObjectURL(f));
+    const big = Math.max(image.width, image.height);
+    if (big > 2048) {
+      const s = 2048 / big;
+      image = await image.resize(Math.round(image.width * s), Math.round(image.height * s));
+    }
+    const { pixel_values } = await processor(image);
+    const { output } = await model({ input: pixel_values });
+    const mask = await RawImage.fromTensor(output[0].mul(255).to("uint8")).resize(image.width, image.height);
+
+    const c = document.createElement("canvas");
+    c.width = image.width; c.height = image.height;
+    const ctx = c.getContext("2d");
+    ctx.drawImage(image.toCanvas(), 0, 0);
+    const d = ctx.getImageData(0, 0, c.width, c.height);
+    for (let i = 0; i < mask.data.length; i++) d.data[4 * i + 3] = mask.data[i];
+    ctx.putImageData(d, 0, 0);
+
+    cutout = c; draw();
+    $("stage").hidden = false; $("tools").hidden = false;
+    status("Selesai. Pilih warna background atau langsung simpan.");
+  } catch (err) {
+    console.error(err);
+    status("Gagal memproses foto. Cek koneksi internet (untuk unduh model pertama kali), lalu coba lagi di Chrome terbaru.", true);
+  }
+});
+
+function setBg(value, btn) {
+  bg = value;
+  document.querySelectorAll(".sw").forEach(b => b.setAttribute("aria-pressed", b === btn ? "true" : "false"));
+  draw();
+}
+document.querySelectorAll(".sw").forEach(b => b.addEventListener("click", () => setBg(b.dataset.bg, b)));
+$("custom").addEventListener("input", e => setBg(e.target.value, null));
+
+$("save").addEventListener("click", () => {
+  $("out").toBlob(blob => {
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "tanpa-background.png";
+    a.click();
+  }, "image/png");
+});
+
+if ("serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+</script>
+</body>
+</html>
